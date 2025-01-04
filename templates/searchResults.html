@@ -10,14 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap">
-<style>
-    @font-face {
-        font-family: 'Noto Sans';
-        src: url("{{ url_for('static', filename='fonts/NotoSans-VariableFont_wdth,wght.ttf') }}") format('truetype');
-        font-weight: 100 900;
-        font-style: normal;
-    }
-</style>
+<link rel="preconnect" href="{{ url_for('static', filename='css/searchResults.css') }}">
 
 {% extends 'index.html' %}
 
@@ -39,7 +32,7 @@
                 <button id="dropdown-toggle-{{ loop.index }}" type="button"
                     style="display: inline-flex; align-items: center;" data-form-id="generate-pseudo-{{ loop.index }}"
                     class="dropdown-toggle w-full text-left focus:outline-none">
-                    {{ file_data['filename'] }} ▼
+                    {{ file_data['filename'] }} {% if file_data['is_toggled'] == 'true'%} ▲ {% else %} ▼ {% endif %}
                     <svg class="animate-spin h-5 w-5 text-gray-500 hidden" xmlns="http://www.w3.org/2000/svg"
                         fill="none" style="margin-left: 8px; width: 1em; height: 1em; fill: currentColor;"
                         viewBox="0 0 24 24" id="refresh-icon-{{ loop.index }}">
@@ -52,20 +45,28 @@
             </form>
 
             <div id="toggle-content-{{ loop.index }}"
-                class="toggle-content overflow-y-auto gap-1  mt-4 min-h-40 max-h-screen p-2 {{ 'visible' if file_data['is_toggled'] == 'true' else 'hidden'}}"
+                class="toggle-content overflow-y-auto gap-1 mt-4 min-h-40 max-h-screen p-2 {{ 'visible' if file_data['is_toggled'] == 'true' else 'hidden'}}"
                 data-hidden-value="{{ file_data['is_toggled'] }}">
-                {% for i in range(file_data['code']|length) %}
-                    <div id="1line-content-index{{ i }}" class="grid grid-cols-3 items-center mb-0">
-                        <pre><code class="language-{{ file_data['language'] }} p-4 mr-4 col-span-2">{{ file_data['code'][i] }}</code></pre>
-                        <p class="">{{ file_data['pseudo'][i] }}</p>
+                <div id="1line-content-index{{ i }}" class="items-start pb-10">
+                    <div class="flex items-start space-x-4">
+                        <div class="w-3/5">
+                            <pre class="code-block"><code style="font-size: 0.8rem" class="language-{{ file_data['language'] }}">{% for i in range(file_data['code']|length) %}{{ file_data['code'][i] }}{% endfor %}</code></pre>
+                        </div>
+
+                        <div class="w-2/5">
+                            <pre class="text-block"><code style="font-size: 0.8rem" class="language-plaintext">{% for i in range(file_data['code']|length) %}{{ file_data['pseudo'][i] }}{% endfor %}</code></pre>
+                        </div>
                     </div>
-                {% endfor %}
-                <!-- <div id="code-content-{{ loop.index }}" class=" p-2 min-h-40 max-h-96">
-                    <pre><code class="language-python">{{ file_data['code'] }}</code></pre>
                 </div>
-                <div id="pseudo-content-{{ loop.index }}" class=" p-2 min-h-40 max-h-96">
-                    {{ file_data['pseudo'] | replace('\n', '<br>') | safe }}
-                </div> -->
+        
+
+                
+                <!-- {% for i in range(file_data['code']|length) %}
+                <div id="1line-content-index{{ i }}" class="grid grid-cols-5 items-center pb-10">
+                    <pre class="code-block col-span-4"><code style="font-size: 0.8rem; padding: 0.5rem;" class="language-{{ file_data['language'] }} px-4">{{ file_data['code'][i] }}</code></pre>
+                    <p class="text-block col-span-1 px-2">{{ file_data['pseudo'][i] }}</p>
+                </div>
+                {% endfor %} -->
             </div>
         </div>
         {% endfor %}

@@ -50,6 +50,9 @@ class GithubScraper:
         
         self.token = config.CODEGPT_PERSONAL_ACCESS_TOKEN
     
+    def get_langExtension(lang):
+        return self.coding_language.get(lang, "unknown")
+    
     def get_files(self, path=''):
         url = f'https://api.github.com/repos/{self.owner}/{self.repo}/contents/{path}'
         headers = {'Accept': 'application/vnd.github.v3+json'}
@@ -84,11 +87,11 @@ class GithubScraper:
             response = requests.get(file_url, headers=headers, auth=auth)
             response.raise_for_status()
             
-            filename = os.path.basename(file_path)
-            txt_filename = f'{os.path.splitext(filename)[0]}{os.path.splitext(filename)[1]}.txt'
+            filename = file_path.replace('/', '\\')
+            txt_filename = f'{filename}.txt'
             save_path = os.path.join(save_dir, txt_filename)
             
-            print(f'[!] downloading {filename}')
+            print(f'[!!] downloading {file_path}')
             
             with open(save_path, 'w', encoding='utf-8') as write_file:
                 write_file.write(response.text)

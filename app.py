@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, url_for, session, redirect, f
 from pymongo import MongoClient
 from codet5 import CodeT5
 from scraper import GithubScraper
+from get_lang import get_extension
 import os
 import config
 from datetime import datetime, timezone
@@ -35,6 +36,9 @@ def format_text(code):
     formatted_code = code.replace('\n', '<br>')
     formatted_code = formatted_code.replace('\t', '&nbsp;&nbsp;&nbsp;&nbsp;')
     return formatted_code
+
+
+
 
 @app.route("/test")
 def test():
@@ -107,8 +111,6 @@ def index():
 def gen_pseudo():
     if "user" in session:
         # might need to rerun after submitting new inquiry
-        cursor = codestorage.find({"username" : session["user"]})
-        repos = [a["repo"] for a in cursor]
     
         if request.method == "POST":
             if 'generate_pseudo' in request.form.get('form_name'):
@@ -116,19 +118,7 @@ def gen_pseudo():
                 print("generating pseudo")
                 print(len(files_data))
                 print(request.form.get('index'))
-
-                # if files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] == 'true':
-                #     files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] = 'false'
-                # elif files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] == 'false':
-                #     files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] = 'true'
                 
-                # if files_data['files'][int(request.form.get('index')) - 1]['generate_pseudo'] == 'false':
-                #     code_t5 = CodeT5()
-                #     result = code_t5.summarize_by_line(files_data['files'][int(request.form.get('index')) - 1]['code'])
-                #     files_data['files'][int(request.form.get('index')) - 1]['pseudo'] = result
-                #     files_data['files'][int(request.form.get('index')) - 1]['generate_pseudo'] = 'true'
-                
-                # same as above but updating cloud as well
                 cur_user = session["user"]
                 cur_repo = files_data['repoName']
 
@@ -149,9 +139,11 @@ def gen_pseudo():
                     files_data['files'][int(request.form.get('index')) - 1]['generate_pseudo'] = 'true'
                     codestorage.update_one({"username" : cur_user, "repo" : cur_repo}, {"$set" : {f"filedata.{int(request.form.get('index')) - 1}.{'generate_pseudo'}": 'true'}})
 
-        fileExts = [a["filename"].split(".") for a in files_data["files"]]
-
-        return render_template('searchResults.html', files_data=files_data, repos=repos, fileExts = fileExts)
+        fileExts = [a["filename"].split(".")[-1] for a in files_data["files"]]
+        cursor = codestorage.find({"username" : session["user"]})
+        repos = [a["repo"] for a in cursor]
+        cur_repo = files_data['repoName']
+        return render_template('searchResults.html', files_data=files_data, repos=repos, fileExts = fileExts, cur_repo=cur_repo)
     else:
         flash("Not logged in yet.", "info")
         return redirect(url_for("login"))
@@ -161,8 +153,6 @@ def search():
     if "user" in session:
         files_data['repoName'] = ''
         files_data['files'] = []
-        cursor = codestorage.find({"username" : session["user"]})
-        repos = [a["repo"] for a in cursor]
         if request.method == "POST":
             if (request.form.get('form_name') == 'query'):
                 query = request.form.get('query')
@@ -176,12 +166,14 @@ def search():
                     for root, dirs, files in os.walk(directory):
                         for file in files:
                             file_path = os.path.join(root, file)
-                            fileName = file[:-4]
+                            fileName = file[:-4].replace('\\', '/')
                             with open(file_path, 'r', encoding='utf-8') as file_obj:
                                 content = []
+                                # for line in file_obj:
+                                #     if line.strip():
+                                #         content.append(line)
                                 for line in file_obj:
-                                    if line.strip():
-                                        content.append(line)
+                                    content.append(line)
 
                                 # print(content)
                                 toadd = {'filename': fileName, 'code': content, 'generate_pseudo': 'false', 'pseudo': [], 'is_toggled': 'false'}
@@ -208,10 +200,51 @@ def search():
                                 #with open(f'temp_repos/{scraper.owner}_{scraper.repo}/{fileName}.txt', "rb") as file:
                                 #    fs.put(file, filename=fileName)
                     print("finished walking through the entire directory")
+
+                else:
+                    files_data['repoName'] = 'directly submitted program'
+                    extension = get_extension(query)
+                    fileName = f'submittedProgram.{extension}'
+                    content = query
+                    toadd = {'filename': fileName, 'code': content, 'generate_pseudo': 'false', 'pseudo': [], 'is_toggled': 'false'}
+                    files_data['files'].append(toadd)
                     
-        
-        fileExts = [a["filename"].split(".") for a in files_data["files"]]
-        return render_template('searchResults.html', files_data=files_data, repos=repos, fileExts=fileExts)
+                    cur_user = session["user"]
+
+                    if (codestorage.find_one({"username" : cur_user, "repo" : query[:12]})):
+                        data = codestorage.find_one({"username" : cur_user, "repo" : query[:12]})
+                        fileNames = [a["filename"] for a in data["filedata"]]
+                        if fileName not in fileNames:
+                            cur_filedata = data["filedata"]
+                            cur_filedata.append(toadd)
+                            codestorage.update_one({"username" : cur_user, "repo" : scraper.repo, 'github_username': scraper.owner}, {"$set" : {"filedata": cur_filedata}})
+                    else:
+                        codestorage.insert_one({"username" : cur_user, "repo" : scraper.repo, 'github_username': scraper.owner, "filedata" : [toadd]})
+
+
+                    
+                    
+                
+        with open('static/json/coding_languages.json', 'r') as f:
+            data = json.load(f)
+            
+        ext_to_name = {}
+        for entry in data:
+            language_name = entry.get('name', 'Unknown')
+            extensions = entry.get('extensions', [])
+            if extensions:
+                first_ext = extensions[0]
+                ext_to_name[first_ext.strip('.')] = language_name
+                
+        for file_data in files_data['files']:
+            filename = file_data['filename']
+            file_ext = filename.split('.')[-1] if '.' in filename else 'Unknown'
+            file_data['ext'] = file_ext
+            file_data['language'] = ext_to_name.get(file_ext, 'Unknown').lower()
+        cursor = codestorage.find({"username" : session["user"]})
+        repos = [a["repo"] for a in cursor]
+
+        return render_template('searchResults.html', files_data=files_data, repos=repos)
     else:
         flash("Not logged in yet.", "info")
         return redirect(url_for("login"))
@@ -242,7 +275,6 @@ def repo(repository):
         #         return render_template('searchResults.html', files_data=files_data, repos=repository)
         # else:
         
-        fileExts = [a["filename"].split(".") for a in files_data["files"]]
         
         with open('static/json/coding_languages.json', 'r') as f:
             data = json.load(f)
@@ -261,7 +293,7 @@ def repo(repository):
             file_data['ext'] = file_ext
             file_data['language'] = ext_to_name.get(file_ext, 'Unknown').lower()
         
-        return render_template('searchResults.html', files_data=files_data, repos=repos)
+        return render_template('searchResults.html', files_data=files_data, repos=repos, cur_repo = repository)
     else:
         flash('Please login first.', 'info')
         return redirect(url_for('login'))
