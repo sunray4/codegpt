@@ -8,8 +8,17 @@
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
-
-
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap">
+<style>
+    @font-face {
+        font-family: 'Noto Sans';
+        src: url("{{ url_for('static', filename='fonts/NotoSans-VariableFont_wdth,wght.ttf') }}") format('truetype');
+        font-weight: 100 900;
+        font-style: normal;
+    }
+</style>
 
 
 <div class="flex flex-col h-screen overflow-hidden">
@@ -31,7 +40,8 @@
                     class="dropdown-toggle w-full text-left focus:outline-none">
                     {{ file_data['filename'] }} ▼
 
-                    <svg class="animate-spin h-5 w-5 text-gray-500 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" style="margin-left: 8px; width: 1em; height: 1em; fill: currentColor;"
+                    <svg class="animate-spin h-5 w-5 text-gray-500 hidden" xmlns="http://www.w3.org/2000/svg"
+                        fill="none" style="margin-left: 8px; width: 1em; height: 1em; fill: currentColor;"
                         viewBox="0 0 24 24" id="refresh-icon-{{ loop.index }}">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
                         </circle>
@@ -48,7 +58,7 @@
                 <div id="code-content-{{ loop.index }}" class="overflow-y-auto p-2 min-h-40 max-h-96">
                     <pre>
                     <code class="language-python"> {{ file_data['code'] | safe }} </code>
-                    </pre> 
+                    </pre>
                     <!-- {{ file_data['code'] | replace('\n', '<br>') | replace('\t', '&nbsp;&nbsp;&nbsp;&nbsp;') | safe }}-->
                 </div>
                 <div id="pseudo-content-{{ loop.index }}" class="overflow-y-auto p-2 min-h-40 max-h-96">
@@ -64,8 +74,9 @@
 
 {% elif query_found %}
 <div class="flex flex-col items-center justify-center h-screen">
-    <p class="text-4xl text-center font-bold text-neutral-950 mb-4 drop-shadow-lg"> Welcome to CodeGPT</p>
-    <p id='typed-text' class="text-xl text-center font-medium text-neutral-800 drop-shadow-md"></p>
+    <p class="text-4xl text-center font-bold text-neutral-950 mb-4 drop-shadow-lg">Welcome to CodeGPT</p>
+    <p id="typed-text" class="text-xl text-center font-medium text-neutral-800 drop-shadow-md"
+        style="font-family: 'Noto Sans', sans-serif;"></p>
 </div>
 
 
@@ -77,37 +88,27 @@
 
 {% block additional_scripts %}
 
+<script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12"></script>
 <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var options = {
+            strings: ["What can I help with?"],
+            typeSpeed: 50, // Adjust typing speed (milliseconds per character)
+            backSpeed: 25, // Adjust backspacing speed if needed
+            loop: false,   // Set to true if you want the typing to loop
+            showCursor: false, // Display the cursor
+            cursorChar: '|',  // Character for cursor
+        };
 
-    const text_element = document.getElementById("typed-text");
-    const text = "How can we help you today?";
-    let index = 0;
+        var typed = new Typed('#typed-text', options);
+    });
 
-    function type_text() {
-        
-        while (index < text.length) {
-            text_element.innerHTML += text[index];
-            index++;
-            setTimeout(type_text, 10000);
-        }
-    }
-    
-
-    window.onload = () => {
-        text_element.innerHTML = '';
-        index = 0;
-        type_text();
-        
-    }
-
-
-    
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const dropdownButtons = document.querySelectorAll('.dropdown-toggle');
 
         dropdownButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                
+            button.addEventListener('click', function () {
+
                 const formId = this.getAttribute('data-form-id');
                 const form = document.getElementById(formId)
                 const index = form.querySelector('input[name="index"]').value;
