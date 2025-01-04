@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block body %}
+
+<div class="grid grid-cols-6 h-screen">
+    <div id="search-history" class="bg-[#F9F9F9] col-span-1 p-5"
+        style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+        <div>
+            <h2 class="text-gray-700 font-bold text-lg mb-4 drop-shadow-md "><a href="{{ url_for('index') }}">Search
+                    History</a></h2>
+            
+            {% if repos %}
+            {% for repo in repos %}
+            <h3><a href="/{{ repo }}" class="font-medium text-indigo-600 hover:text-indigo-500">{{repo}}</a></h3>
+            {% endfor %}
+            {% endif %}
+        </div>
+        <p>
+            <a href="/logout"
+                class="mt-auto bg-[#F9F9F9] block w-full mx-auto px-6 py-2 text-center hover:bg-[#ECECEC] rounded flex items-center justify-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" />
+                </svg>
+                <span>Logout</span>
+            </a>
+        </p>
+    </div>
+    <div id="content-display" class="h-screen flex flex-col col-span-5 bg-[#FFFFFF]">
+        <nav class="flex justify-end p-2 pt-4 pr-4" style="display: flex; align-items: center;">
+            <p class="text-xl pr-2 font-semibold text-slate-600">CodeGPT</p>
+            <img width="33" height="23" src="{{ url_for('static', filename='images/logo.png') }}" type="image/png" alt="CodeGPT logo" />
+        </nav>
+
+        {% block searchResults %}
+        {% endblock %}
+
+        <!-- <div id="search-bar" class="mt-auto p-4 pb-8 pt-1 col-span-2">
+                <form action="/" method="POST">
+                    <div class="relative w-full">
+                        <input type="text" name="query" class="search-input w-full p-2 pl-4 pr-12 border rounded-full bg-[#F4F4F4]" placeholder="Enter your github repository link here." required>
+                        <button class="absolute top-1/2 right-2 transform -translate-y-1/2 w-8 h-8 bg-black text-white rounded-full flex items-center justify-center hover:bg-gray-800">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.25" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18" />
+                            </svg>
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+            </div> -->
+
+        <div id="search-bar" class="mt-auto px-4 pt-2 mx-4 mb-4 bg-[#F4F4F4] rounded-3xl">
+            <form action="/" method="POST" class="flex flex-col" id="query-form">
+                <input type="hidden" name="form_name" value="query">
+                <div class="relative">
+                    <textarea name="query" rows="1"
+                        class="w-full p-2 pr-6 bg-[#F4F4F4] text-[#5D5D5D] placeholder-[#5D5D5D] focus:outline-none resize-none overflow-hidden"
+                        placeholder="Enter your GitHub repository link here." required></textarea>
+                </div>
+
+                <div class="flex justify-between items-center pb-2">
+                    <button type="button"
+                        class="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-[#DEDEDE]">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.25"
+                            stroke="currentColor" class="w-5 h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                        </svg>
+                    </button>
+
+                    <!-- Send Button -->
+                    <button type="button"
+                        class="flex items-center justify-center w-8 h-8 bg-black text-white rounded-full hover:bg-[#000000]"
+                        id="submit-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.25"
+                            stroke="currentColor" class="w-5 h-5 hover:text-[#BBBBBB]" id="arrow-svg">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18" />
+                        </svg>
+
+                        <svg class="animate-spin h-5 w-5 text-white-500 hidden" xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24" id="spinner-svg">
+                            <circle class="opacity-40" cx="12" cy="12" r="10" stroke="white" stroke-width="4">
+                            </circle>
+                            <path class="" fill="white"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                            </path>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+    function isValidGithubURL(url) {
+        try {
+            const parsedURL = new URL(url);
+            const githubURLPattern = /^https:\/\/github.com\/[^/]+\/[^/]+\/?$/;
+            return githubURLPattern.test(parsedURL.href);
+        } catch (e) {
+            return false;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const textarea = document.querySelector('textarea[name="query"]');
+        const maxRows = 10;
+
+        document.getElementById('submit-btn').addEventListener('click', function () {
+            document.getElementById('spinner-svg').classList.remove('hidden');
+            document.getElementById('arrow-svg').classList.add('hidden');
+
+            if (!isValidGithubURL(textarea.value.trim())) {
+                event.preventDefault();
+                alert('Invalid URL. Please try again.');
+            }
+            document.getElementById('query-form').submit();
+        })
+
+        document.getElementById('query-form').addEventListener('submit', function (event) {
+            if (!isValidGithubURL(textarea.value.trim())) {
+                event.preventDefault();
+                alert('Invalid URL. Please try again.');
+            }
+        })
+
+        textarea.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' && !event.shiftkey) {
+                event.preventDefault();
+
+                if (!isValidGithubURL(textarea.value.trim())) {
+                    event.preventDefault();
+                    alert('Invalid URL. Please try again.');
+                }
+                document.getElementById('query-form').submit();
+            }
+        })
+
+        textarea.addEventListener('input', function () {
+            this.style.height = 'auto';
+
+            const lineHeight = parseInt(window.getComputedStyle(this).lineHeight);
+            const lines = Math.min((this.scrollHeight / lineHeight), maxRows);
+            const newHeight = lineHeight * lines;
+
+            this.style.height = `${newHeight}px`;
+        });
+
+
+    });
+</script>
+
+{% block additional_scripts %}
+{% endblock %}
+
+{% endblock %}

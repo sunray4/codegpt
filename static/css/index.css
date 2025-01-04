@@ -1,0 +1,12 @@
+textarea[name="query"] {
+    width: 100%;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px; /* Fully rounded corners */
+    border: 0px;
+    background-color: #F4F4F4;
+    color: #5D5D5D;
+    font-size: 1rem;
+    line-height: 1.5;
+    resize: none; /* Prevent manual resizing */
+    overflow-y: hidden; /* Hide vertical scrollbar */
+}
