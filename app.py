@@ -6,6 +6,7 @@ import os
 import config
 from datetime import datetime, timezone
 import shutil
+import json
 
 app = Flask(__name__)
 app.config.from_object('config.DevConfig')
@@ -141,15 +142,16 @@ def gen_pseudo():
 
                 if files_data['files'][int(request.form.get('index')) - 1]['generate_pseudo'] == 'false':
                     code_t5 = CodeT5()
-                    result = code_t5.summarize_by_line(files_data['files'][int(request.form.get('index')) - 1]['code'])
+                    result = code_t5.summarize_line(files_data['files'][int(request.form.get('index')) - 1]['code'])
                     files_data['files'][int(request.form.get('index')) - 1]['pseudo'] = result
                     codestorage.update_one({"username" : cur_user, "repo" : cur_repo}, {"$set" : {f"filedata.{int(request.form.get('index')) - 1}.{'pseudo'}": result}})
 
                     files_data['files'][int(request.form.get('index')) - 1]['generate_pseudo'] = 'true'
                     codestorage.update_one({"username" : cur_user, "repo" : cur_repo}, {"$set" : {f"filedata.{int(request.form.get('index')) - 1}.{'generate_pseudo'}": 'true'}})
 
-                    
-        return render_template('searchResults.html', files_data=files_data, repos=repos)
+        fileExts = [a["filename"].split(".") for a in files_data["files"]]
+
+        return render_template('searchResults.html', files_data=files_data, repos=repos, fileExts = fileExts)
     else:
         flash("Not logged in yet.", "info")
         return redirect(url_for("login"))
@@ -176,8 +178,13 @@ def search():
                             file_path = os.path.join(root, file)
                             fileName = file[:-4]
                             with open(file_path, 'r', encoding='utf-8') as file_obj:
-                                content = file_obj.read()
-                                toadd = {'filename': fileName, 'code': content, 'generate_pseudo': 'false', 'pseudo': '', 'is_toggled': 'false'}
+                                content = []
+                                for line in file_obj:
+                                    if line.strip():
+                                        content.append(line)
+
+                                # print(content)
+                                toadd = {'filename': fileName, 'code': content, 'generate_pseudo': 'false', 'pseudo': [], 'is_toggled': 'false'}
                                 files_data['files'].append(toadd)
                                 
                                 
@@ -201,8 +208,10 @@ def search():
                                 #with open(f'temp_repos/{scraper.owner}_{scraper.repo}/{fileName}.txt', "rb") as file:
                                 #    fs.put(file, filename=fileName)
                     print("finished walking through the entire directory")
-                    # return redirect(url_for('searchResults'))
-        return render_template('searchResults.html', files_data=files_data, repos=repos)
+                    
+        
+        fileExts = [a["filename"].split(".") for a in files_data["files"]]
+        return render_template('searchResults.html', files_data=files_data, repos=repos, fileExts=fileExts)
     else:
         flash("Not logged in yet.", "info")
         return redirect(url_for("login"))
@@ -232,6 +241,26 @@ def repo(repository):
                     
         #         return render_template('searchResults.html', files_data=files_data, repos=repository)
         # else:
+        
+        fileExts = [a["filename"].split(".") for a in files_data["files"]]
+        
+        with open('static/json/coding_languages.json', 'r') as f:
+            data = json.load(f)
+            
+        ext_to_name = {}
+        for entry in data:
+            language_name = entry.get('name', 'Unknown')
+            extensions = entry.get('extensions', [])
+            if extensions:
+                first_ext = extensions[0]
+                ext_to_name[first_ext.strip('.')] = language_name
+                
+        for file_data in files_data['files']:
+            filename = file_data['filename']
+            file_ext = filename.split('.')[-1] if '.' in filename else 'Unknown'
+            file_data['ext'] = file_ext
+            file_data['language'] = ext_to_name.get(file_ext, 'Unknown').lower()
+        
         return render_template('searchResults.html', files_data=files_data, repos=repos)
     else:
         flash('Please login first.', 'info')
@@ -244,6 +273,17 @@ def repo(repository):
     else:
         return redirect(url_for("index"))
     '''
-            
+
+@app.route("/<repository>/delete")
+def delete(repository):
+    if "user" in session:
+        cur_user = session["user"]
+        codestorage.delete_one({ "username": cur_user, "repo" : repository })
+        return redirect(url_for("index"))
+    flash("Not logged in yet!", "error")
+    return redirect(url_for("login"))
+
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=5550)

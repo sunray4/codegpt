@@ -2,6 +2,11 @@
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+
+<!-- prism.js -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/prism.css') }}">
+<script src="{{ url_for('static', filename='js/prism.js')}}"></script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap">
@@ -47,14 +52,20 @@
             </form>
 
             <div id="toggle-content-{{ loop.index }}"
-                class="toggle-content overflow-y-auto gap-4 grid grid-cols-2 mt-4 min-h-40 max-h-screen p-2 {{ 'visible' if file_data['is_toggled'] == 'true' else 'hidden'}}"
+                class="toggle-content overflow-y-auto gap-1  mt-4 min-h-40 max-h-screen p-2 {{ 'visible' if file_data['is_toggled'] == 'true' else 'hidden'}}"
                 data-hidden-value="{{ file_data['is_toggled'] }}">
-                <div id="code-content-{{ loop.index }}" class=" p-2 min-h-40 max-h-96">
+                {% for i in range(file_data['code']|length) %}
+                    <div id="1line-content-index{{ i }}" class="grid grid-cols-3 items-center mb-0">
+                        <pre><code class="language-{{ file_data['language'] }} p-4 mr-4 col-span-2">{{ file_data['code'][i] }}</code></pre>
+                        <p class="">{{ file_data['pseudo'][i] }}</p>
+                    </div>
+                {% endfor %}
+                <!-- <div id="code-content-{{ loop.index }}" class=" p-2 min-h-40 max-h-96">
                     <pre><code class="language-python">{{ file_data['code'] }}</code></pre>
                 </div>
                 <div id="pseudo-content-{{ loop.index }}" class=" p-2 min-h-40 max-h-96">
                     {{ file_data['pseudo'] | replace('\n', '<br>') | safe }}
-                </div>
+                </div> -->
             </div>
         </div>
         {% endfor %}

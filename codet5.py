@@ -66,6 +66,17 @@ class CodeT5:
                 
         return '\n'.join(output)
     
+    def summarize_line(self, code):
+        output = []
+        
+        for line in code:
+            if line.strip():
+                summary = self.summarize_code(line)
+                print(f'Code: {line}\nSummary: {summary}\n')
+                output.append(f'Summary: {summary}')
+                
+        return output
+    
     def summarize_by_chunks(self, code):
         code_blocks = self.extract_code_blocks(code)
         output = []
