@@ -105,6 +105,51 @@ def index():
         else:
             repos = []
     
+        
+        if request.method == "POST":
+            if 'generate_pseudo' in request.form.get('form_name'):
+                query_found = True
+                print("generating pseudo")
+                print(len(files_data))
+                print(request.form.get('index'))
+
+                if files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] == 'true':
+                    files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] = 'false'
+                elif files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] == 'false':
+                    files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] = 'true'
+                
+                if files_data['files'][int(request.form.get('index')) - 1]['generate_pseudo'] == 'false':
+                    code_t5 = CodeT5()
+                    result = code_t5.summarize_by_line(files_data['files'][int(request.form.get('index')) - 1]['code'])
+                    files_data['files'][int(request.form.get('index')) - 1]['pseudo'] = result
+                    files_data['files'][int(request.form.get('index')) - 1]['generate_pseudo'] = 'true'
+                    
+            
+            
+            # return render_template('searchResults.html', files_data=files_data, repos=repos)
+        # else:
+        #     print("staarting template should reload next")   
+            # return render_template('starting.html', repos=repos)
+    else:
+        flash("Not logged in yet.", "info")
+        return redirect(url_for("login"))
+    
+    if "user" in session:
+            cursor = codestorage.find({"username" : session["user"]})
+            repos = [a["repo"] for a in cursor]
+    else:
+        repos = []
+
+    print("search results template should reload next")   
+    return render_template('searchResults.html', files_data=files_data, repos=repos, query_found=query_found)
+
+@app.route('/search', methods=['GET', "POST"])
+def search():
+    files_data['repoName'] = ''
+    files_data['files'] = []
+    if "user" in session:
+        cursor = codestorage.find({"username" : session["user"]})
+        repos = [a["repo"] for a in cursor]
         if request.method == "POST":
             if (request.form.get('form_name') == 'query'):
                 query = request.form.get('query')
@@ -146,42 +191,10 @@ def index():
                                 #    fs.put(file, filename=fileName)
                     print("finished walking through the entire directory")
                     # return redirect(url_for('searchResults'))
-                
-            elif 'generate_pseudo' in request.form.get('form_name'):
-                query_found = True
-                print("generating pseudo")
-                print(len(files_data))
-                print(request.form.get('index'))
-
-                if files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] == 'true':
-                    files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] = 'false'
-                elif files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] == 'false':
-                    files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] = 'true'
-                
-                if files_data['files'][int(request.form.get('index')) - 1]['generate_pseudo'] == 'false':
-                    code_t5 = CodeT5()
-                    result = code_t5.summarize_by_line(files_data['files'][int(request.form.get('index')) - 1]['code'])
-                    files_data['files'][int(request.form.get('index')) - 1]['pseudo'] = result
-                    files_data['files'][int(request.form.get('index')) - 1]['generate_pseudo'] = 'true'
-                    
-            
-            
-            # return render_template('searchResults.html', files_data=files_data, repos=repos)
-        # else:
-        #     print("staarting template should reload next")   
-            # return render_template('starting.html', repos=repos)
+        return render_template('searchResults.html', files_data=files_data, repos=repos, query_found=query_found)
     else:
         flash("Not logged in yet.", "info")
         return redirect(url_for("login"))
-    
-    if "user" in session:
-            cursor = codestorage.find({"username" : session["user"]})
-            repos = [a["repo"] for a in cursor]
-    else:
-        repos = []
-
-    print("search results template should reload next")   
-    return render_template('searchResults.html', files_data=files_data, repos=repos, query_found=query_found)
 
 @app.route("/<repository>", methods=['POST', 'GET'])
 def repo(repository):

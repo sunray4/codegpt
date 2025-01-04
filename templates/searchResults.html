@@ -1,9 +1,3 @@
-{% extends 'index.html' %}
-
-
-{% block searchResults %}
-
-{% if files_data['files'] and query_found %}
 <!--To help colour text - only works for python rn but can add more scripts for other languages -->
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css" rel="stylesheet">
@@ -20,54 +14,49 @@
     }
 </style>
 
+{% extends 'index.html' %}
 
+
+{% block searchResults %}
+
+{% if files_data['files'] and query_found %}
 <div class="flex flex-col h-screen overflow-hidden">
     <div class="flex-1 overflow-y-auto p-4 space-y-4">
 
         <p>Here are your search results on {{ files_data['repoName'] }}.</p>
 
         {% for file_data in files_data['files'] %}
-
-        <div id="1file-result" class="flex-1 overflow-y-auto p-4">
-
+        <div id="file-result" class="flex-1 overflow-y-auto p-4">
             <form action="/" method="POST" id="generate-pseudo-{{ loop.index }}">
                 <input type="hidden" name="form_name" value="generate_pseudo">
                 <input type="hidden" name="index" value="{{ loop.index }}">
                 <input type="hidden" name="status" value="{{ file_data['generate_pseudo'] }}">
-
                 <button id="dropdown-toggle-{{ loop.index }}" type="button"
                     style="display: inline-flex; align-items: center;" data-form-id="generate-pseudo-{{ loop.index }}"
                     class="dropdown-toggle w-full text-left focus:outline-none">
                     {{ file_data['filename'] }} ▼
-
                     <svg class="animate-spin h-5 w-5 text-gray-500 hidden" xmlns="http://www.w3.org/2000/svg"
                         fill="none" style="margin-left: 8px; width: 1em; height: 1em; fill: currentColor;"
                         viewBox="0 0 24 24" id="refresh-icon-{{ loop.index }}">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
                         </circle>
                         <path class="opacity-75" fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                        </path>
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
                 </button>
             </form>
 
             <div id="toggle-content-{{ loop.index }}"
-                class="toggle-content gap-4 grid grid-cols-2 mt-4 min-h-40 max-h-screen p-2 {{ 'visble' if file_data['is_toggled'] == 'true' else 'hidden'}}"
-                data-hidden-value="{{ file_data['is_togged'] }}">
+                class="toggle-content gap-4 grid grid-cols-2 mt-4 min-h-40 max-h-screen p-2 {{ 'visible' if file_data['is_toggled'] == 'true' else 'hidden'}}"
+                data-hidden-value="{{ file_data['is_toggled'] }}">
                 <div id="code-content-{{ loop.index }}" class="overflow-y-auto p-2 min-h-40 max-h-96">
-                    <pre>
-                    <code class="language-python"> {{ file_data['code'] | safe }} </code>
-                    </pre>
-                    <!-- {{ file_data['code'] | replace('\n', '<br>') | replace('\t', '&nbsp;&nbsp;&nbsp;&nbsp;') | safe }}-->
+                    <pre><code class="language-python">{{ file_data['code'] }}</code></pre>
                 </div>
                 <div id="pseudo-content-{{ loop.index }}" class="overflow-y-auto p-2 min-h-40 max-h-96">
                     {{ file_data['pseudo'] | replace('\n', '<br>') | safe }}
                 </div>
             </div>
-
         </div>
-
         {% endfor %}
     </div>
 </div>
@@ -78,8 +67,6 @@
     <p id="typed-text" class="text-xl text-center font-medium text-neutral-800 drop-shadow-md"
         style="font-family: 'Noto Sans', sans-serif;"></p>
 </div>
-
-
 {% else %}
 <p class="m-4">No files found from repository or invalid repository link. Please try again with a different link</p>
 {% endif %}
