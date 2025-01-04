@@ -11,7 +11,8 @@
             
             {% if repos %}
             {% for repo in repos %}
-            <h3><a href="/{{ repo }}" class="font-medium text-indigo-600 hover:text-indigo-500">{{repo}}</a></h3>
+            <h3><a href="/{{ repo }}" class="font-medium text-indigo-600 hover:text-indigo-500 mb-2">{{repo}}</a>
+                <a href="/{{repo}}/delete: class=</h3>
             {% endfor %}
             {% endif %}
         </div>
@@ -34,6 +35,8 @@
         </nav>
 
         {% block searchResults %}
+        {% endblock %}
+        {% block starting %}
         {% endblock %}
 
         <!-- <div id="search-bar" class="mt-auto p-4 pb-8 pt-1 col-span-2">
@@ -160,7 +163,10 @@
     });
 </script>
 
-{% block additional_scripts %}
+{% block searchResults_scripts %}
+{% endblock %}
+
+{% block starting_scripts %}
 {% endblock %}
 
 {% endblock %}

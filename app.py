@@ -4,7 +4,6 @@ from codet5 import CodeT5
 from scraper import GithubScraper
 import os
 import config
-import gridfs
 from datetime import datetime, timezone
 import shutil
 
@@ -22,12 +21,9 @@ db = client.get_database('db')
 users = db.get_collection('users')
 codestorage = db.get_collection('codestorage')
 
-# initialize fs
-# fs = gridfs.GridFS(db)
-
 #global variables
 files_data = {'repoName':'', 'files':[]}
-query_found = True
+
 
 def fetch_filesdata(username, repo):
     if (codestorage.find_one({"username" : username, "repo" : repo})):
@@ -94,66 +90,81 @@ def logout():
     return redirect(url_for("login"))
 
 
-@app.route('/', methods=['GET', "POST"])
+@app.route('/')
 def index():
-    global query_found
     if "user" in session:
         #might need to rerun after submitting new inquiry
-        if "user" in session:
-            cursor = codestorage.find({"username" : session["user"]})
-            repos = [a["repo"] for a in cursor]
-        else:
-            repos = []
-    
-        
-        if request.method == "POST":
-            if 'generate_pseudo' in request.form.get('form_name'):
-                query_found = True
-                print("generating pseudo")
-                print(len(files_data))
-                print(request.form.get('index'))
-
-                if files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] == 'true':
-                    files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] = 'false'
-                elif files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] == 'false':
-                    files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] = 'true'
-                
-                if files_data['files'][int(request.form.get('index')) - 1]['generate_pseudo'] == 'false':
-                    code_t5 = CodeT5()
-                    result = code_t5.summarize_by_line(files_data['files'][int(request.form.get('index')) - 1]['code'])
-                    files_data['files'][int(request.form.get('index')) - 1]['pseudo'] = result
-                    files_data['files'][int(request.form.get('index')) - 1]['generate_pseudo'] = 'true'
-                    
-            
-            
-            # return render_template('searchResults.html', files_data=files_data, repos=repos)
-        # else:
-        #     print("staarting template should reload next")   
-            # return render_template('starting.html', repos=repos)
+        cursor = codestorage.find({"username" : session["user"]})
+        repos = [a["repo"] for a in cursor]
+        return render_template('starting.html', repos=repos)
     else:
         flash("Not logged in yet.", "info")
         return redirect(url_for("login"))
     
-    if "user" in session:
-            cursor = codestorage.find({"username" : session["user"]})
-            repos = [a["repo"] for a in cursor]
-    else:
-        repos = []
 
-    print("search results template should reload next")   
-    return render_template('searchResults.html', files_data=files_data, repos=repos, query_found=query_found)
+@app.route('/gen_pseudo', methods=['GET', "POST"])
+def gen_pseudo():
+    if "user" in session:
+        # might need to rerun after submitting new inquiry
+        cursor = codestorage.find({"username" : session["user"]})
+        repos = [a["repo"] for a in cursor]
+    
+        if request.method == "POST":
+            if 'generate_pseudo' in request.form.get('form_name'):
+                
+                print("generating pseudo")
+                print(len(files_data))
+                print(request.form.get('index'))
+
+                # if files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] == 'true':
+                #     files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] = 'false'
+                # elif files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] == 'false':
+                #     files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] = 'true'
+                
+                # if files_data['files'][int(request.form.get('index')) - 1]['generate_pseudo'] == 'false':
+                #     code_t5 = CodeT5()
+                #     result = code_t5.summarize_by_line(files_data['files'][int(request.form.get('index')) - 1]['code'])
+                #     files_data['files'][int(request.form.get('index')) - 1]['pseudo'] = result
+                #     files_data['files'][int(request.form.get('index')) - 1]['generate_pseudo'] = 'true'
+                
+                # same as above but updating cloud as well
+                cur_user = session["user"]
+                cur_repo = files_data['repoName']
+
+                if files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] == 'true':
+                    files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] = 'false'
+                    codestorage.update_one({"username" : cur_user, "repo" : cur_repo}, {"$set" : {f"filedata.{int(request.form.get('index')) - 1}.{'is_toggled'}": 'false'}})
+
+                elif files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] == 'false':
+                    files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] = 'true'
+                    codestorage.update_one({"username" : cur_user, "repo" : cur_repo}, {"$set" : {f"filedata.{int(request.form.get('index')) - 1}.{'is_toggled'}": 'true'}})
+
+                if files_data['files'][int(request.form.get('index')) - 1]['generate_pseudo'] == 'false':
+                    code_t5 = CodeT5()
+                    result = code_t5.summarize_by_line(files_data['files'][int(request.form.get('index')) - 1]['code'])
+                    files_data['files'][int(request.form.get('index')) - 1]['pseudo'] = result
+                    codestorage.update_one({"username" : cur_user, "repo" : cur_repo}, {"$set" : {f"filedata.{int(request.form.get('index')) - 1}.{'pseudo'}": result}})
+
+                    files_data['files'][int(request.form.get('index')) - 1]['generate_pseudo'] = 'true'
+                    codestorage.update_one({"username" : cur_user, "repo" : cur_repo}, {"$set" : {f"filedata.{int(request.form.get('index')) - 1}.{'generate_pseudo'}": 'true'}})
+
+                    
+        return render_template('searchResults.html', files_data=files_data, repos=repos)
+    else:
+        flash("Not logged in yet.", "info")
+        return redirect(url_for("login"))
 
 @app.route('/search', methods=['GET', "POST"])
 def search():
-    files_data['repoName'] = ''
-    files_data['files'] = []
     if "user" in session:
+        files_data['repoName'] = ''
+        files_data['files'] = []
         cursor = codestorage.find({"username" : session["user"]})
         repos = [a["repo"] for a in cursor]
         if request.method == "POST":
             if (request.form.get('form_name') == 'query'):
                 query = request.form.get('query')
-                query_found = False
+                
                 print("query received")
                 if query.startswith('http') and 'github.com' in query:
                     scraper = GithubScraper(query)       
@@ -168,7 +179,7 @@ def search():
                                 content = file_obj.read()
                                 toadd = {'filename': fileName, 'code': content, 'generate_pseudo': 'false', 'pseudo': '', 'is_toggled': 'false'}
                                 files_data['files'].append(toadd)
-                                query_found = True
+                                
                                 
                                 cur_user = session["user"]
 
@@ -191,7 +202,7 @@ def search():
                                 #    fs.put(file, filename=fileName)
                     print("finished walking through the entire directory")
                     # return redirect(url_for('searchResults'))
-        return render_template('searchResults.html', files_data=files_data, repos=repos, query_found=query_found)
+        return render_template('searchResults.html', files_data=files_data, repos=repos)
     else:
         flash("Not logged in yet.", "info")
         return redirect(url_for("login"))
@@ -199,27 +210,29 @@ def search():
 @app.route("/<repository>", methods=['POST', 'GET'])
 def repo(repository):
     if "user" in session:
+        cursor = codestorage.find({"username" : session["user"]})
+        repos = [a["repo"] for a in cursor]
         files_data['files'] = fetch_filesdata(session["user"], repository)
         files_data['repoName'] = repository
-        
-        if request.method == 'POST':
-            if 'generate_pseudo' in request.form.get('form_name'):
-                print('generating pseudo for past search')
+        print(repository)
+        # if request.method == 'POST':
+        #     if 'generate_pseudo' in request.form.get('form_name'):
+        #         print('generating pseudo for past search')
                 
-                if files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] == 'true':
-                    files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] = 'false'
-                elif files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] == 'false':
-                    files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] = 'true'
+        #         if files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] == 'true':
+        #             files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] = 'false'
+        #         elif files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] == 'false':
+        #             files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] = 'true'
                 
-                if files_data['files'][int(request.form.get('index')) - 1]['generate_pseudo'] == 'false':
-                    code_t5 = CodeT5()
-                    result = code_t5.summarize_by_line(files_data['files'][int(request.form.get('index')) - 1]['code'])
-                    files_data['files'][int(request.form.get('index')) - 1]['pseudo'] = result
-                    files_data['files'][int(request.form.get('index')) - 1]['generate_pseudo'] = 'true'
+        #         if files_data['files'][int(request.form.get('index')) - 1]['generate_pseudo'] == 'false':
+        #             code_t5 = CodeT5()
+        #             result = code_t5.summarize_by_line(files_data['files'][int(request.form.get('index')) - 1]['code'])
+        #             files_data['files'][int(request.form.get('index')) - 1]['pseudo'] = result
+        #             files_data['files'][int(request.form.get('index')) - 1]['generate_pseudo'] = 'true'
                     
-                return render_template('pastResults.html', filedata=files_data, repository=repository)
-        else:
-            return render_template('pastResults.html', filedata=files_data, repository=repository)
+        #         return render_template('searchResults.html', files_data=files_data, repos=repository)
+        # else:
+        return render_template('searchResults.html', files_data=files_data, repos=repos)
     else:
         flash('Please login first.', 'info')
         return redirect(url_for('login'))
