@@ -2,7 +2,6 @@ from flask import Flask, render_template, request, url_for, session, redirect, f
 from pymongo import MongoClient
 from codet5 import CodeT5
 from scraper import GithubScraper
-from get_lang import get_extension
 import urllib.parse
 import os
 import config
@@ -13,6 +12,8 @@ import json
 app = Flask(__name__)
 app.config.from_object('config.DevConfig')
 app.secret_key = "secretkey"
+code_t5 = CodeT5()
+code_t5.init()
 
 # database config
 MONGO_URI = config.MONGO_URI
@@ -24,9 +25,8 @@ db = client.get_database('db')
 users = db.get_collection('users')
 codestorage = db.get_collection('codestorage')
 
-#global variables
+# global variables
 files_data = {'repoName':'', 'files':[]}
-
 
 def fetch_filesdata(username, repo):
     if (codestorage.find_one({"username" : username, "repo" : repo})):
@@ -135,7 +135,6 @@ def gen_pseudo():
                     codestorage.update_one({"username" : cur_user, "repo" : cur_repo}, {"$set" : {f"filedata.{int(request.form.get('index')) - 1}.{'is_toggled'}": 'true'}})
 
                 if files_data['files'][int(request.form.get('index')) - 1]['generate_pseudo'] == 'false':
-                    code_t5 = CodeT5()
                     result = code_t5.summarize_line(files_data['files'][int(request.form.get('index')) - 1]['code'])
                     files_data['files'][int(request.form.get('index')) - 1]['pseudo'] = result
                     codestorage.update_one({"username" : cur_user, "repo" : cur_repo}, {"$set" : {f"filedata.{int(request.form.get('index')) - 1}.{'pseudo'}": result}})
@@ -154,6 +153,7 @@ def gen_pseudo():
 
 @app.route('/search', methods=['GET', "POST"])
 def search():
+    cur_repo = files_data['repoName']
     if "user" in session:
         files_data['repoName'] = ''
         files_data['files'] = []
@@ -195,11 +195,11 @@ def search():
                                 # delete local storage
                                 os.remove(file_path)
                                 
-                    if os.path.exists(directory): shutil.rmtree(directory)
+                    if os.path.exists(directory):
+                        shutil.rmtree(directory)
 
-                                #with open(f'temp_repos/{scraper.owner}_{scraper.repo}/{fileName}.txt', "rb") as file:
-                                #    fs.put(file, filename=fileName)
                     print("finished walking through the entire directory")
+                    cur_repo = files_data['repoName']
 
                 else:
                     files_data['repoName'] = 'a directly submitted program'
@@ -210,13 +210,12 @@ def search():
                     for i in range(len(content)):
                         content[i] = content[i] + '\n'
                         
-                    print(content)
-                        
                     toadd = {'filename': fileName, 'code': content, 'generate_pseudo': 'false', 'pseudo': [], 'is_toggled': 'false'}
                     files_data['files'].append(toadd)
                     
                     cur_user = session["user"]
                     repo = query[:12].strip()
+                    cur_repo=repo
                     if (codestorage.find_one({"username" : cur_user, "repo" : repo})):
                         data = codestorage.find_one({"username" : cur_user, "repo" : repo})
                         fileNames = [a["filename"] for a in data["filedata"]]
@@ -247,8 +246,8 @@ def search():
                 
         cursor = codestorage.find({"username" : session["user"]})
         repos = [a["repo"] for a in cursor]
-
-        return render_template('searchResults.html', files_data=files_data, repos=repos, mode=session.get("mode"))
+        
+        return render_template('searchResults.html', files_data=files_data, repos=repos, mode=session.get("mode"), cur_repo=cur_repo)
     else:
         flash("Not logged in yet.", "info")
         return redirect(url_for("login"))

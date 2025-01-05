@@ -2,6 +2,7 @@ from transformers import RobertaTokenizer, T5ForConditionalGeneration
 import torch
 import ast
 import json
+import re
 
 class CodeBlockVisitor(ast.NodeVisitor):
     def __init__(self, source_code):
@@ -39,6 +40,24 @@ class CodeT5:
             self.device = torch.device('cpu')
             print('[INFO] Using CPU')
             
+        self.comment_pattern = re.compile(r'''
+            ^\s*(
+                //|             # C, C++, Java, JavaScript, C#, Go, Swift, Kotlin, Dart, TypeScript
+                \#|             # Python, Ruby, Perl, Shell Script
+                %|              # MATLAB
+                ;|              # Assembly
+                --|             # SQL, Ada
+                /\*|            # Start of C-style block comment
+                \(\*|           # Start of Pascal-style block comment
+                <!--|           # HTML, XML
+                '               # Visual Basic, Haskell
+            )
+        ''', re.VERBOSE)
+        
+        self.tokenizer = None
+        self.model = None
+            
+    def init(self):
         self.tokenizer = RobertaTokenizer.from_pretrained('Salesforce/codet5-base-multi-sum')
         self.model = T5ForConditionalGeneration.from_pretrained('Salesforce/codet5-base-multi-sum').to(self.device)
             
@@ -73,8 +92,9 @@ class CodeT5:
         for line in code:
             if line == '\n' or line == '' or line.strip() == '\n' or line.strip() == '':
                 output.append('\n')
-            
-            if line.strip():
+            elif self.is_comment(line.strip()):
+                output.append('\n\n')
+            else:
                 summary = self.summarize_code(line)
                 print(f'Code: {line}\nSummary: {summary}\n')
                 output.append(f'{summary}\n')
@@ -103,3 +123,6 @@ class CodeT5:
         else:
             print('not python')
             return self.summarize_line(code)
+    
+    def is_comment(self, line):
+        return bool(self.comment_pattern.match(line.strip()))
