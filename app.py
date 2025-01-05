@@ -168,6 +168,7 @@ def search():
     cur_repo = files_data['repoName']
     if "user" in session:
         files_data['repoName'] = ''
+        files_data['summary'] = ''
         files_data['files'] = []
         if request.method == "POST":
             if (request.form.get('form_name') == 'query'):
