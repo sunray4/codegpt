@@ -21,13 +21,17 @@
 <div class="flex flex-col h-screen overflow-hidden">
     <div class="flex-1 overflow-y-auto p-4 space-y-4 dark:text-white">
 
-        <p>Here are your search results on {{ files_data['repoName'] }}.</p>
+        <p>Here are your search results on "{{ files_data['repoName'] }}".</p>
+
+        {% if files_data['summary'] %}
+        <p><strong>Code Snippet Overview: </strong><span>{{ files_data['summary'] }}.</span></p>
+        {% endif %}
 
         {% for file_data in files_data['files'] %}
         <div id="file-result" class="flex-1 overflow-y-auto p-4">
             <form action="/gen_pseudo" method="POST" id="generate-pseudo-{{ loop.index }}">
                 <input type="hidden" name="form_name" value="generate_pseudo">
-                <input type="hidden" name="repo" value="files_data[repoName]">
+                <input type="hidden" name="repo" value="{{ files_data['repoName'] }}">
                 <input type="hidden" name="index" value="{{ loop.index }}">
                 <input type="hidden" name="status" value="{{ file_data['generate_pseudo'] }}">
                 <button id="dropdown-toggle-{{ loop.index }}" type="button"

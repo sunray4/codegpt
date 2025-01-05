@@ -12,9 +12,9 @@
             {% for repo in repos %}
             <div class="flex justify-between items-center w-full mb-3">
                 {% if cur_repo and repo == cur_repo %}
-                <div class="w-full  bg-[#e2e2e2] dark:bg-[#313030] py-2 px-4 flex items-center justify-between">
+                <div class="w-full  bg-[#e2e2e2] dark:bg-[#313030] py-2 px-4 rounded-md flex items-center justify-between">
                     <a href="/{{ repo }}"
-                        class="font-medium text-black dark:text-white hover:text-gray-700 dark:hover:text-gray-300  rounded-1g">
+                        class="font-medium text-black dark:text-white hover:text-gray-700 dark:hover:text-gray-300  rounded-1g" style="overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
                         {{repo}}
                     </a>
                     <a href="/{{repo}}/delete" class="hover:bg-[#ECECEC] hover:dark:bg-[#212121] rounded p-2">
@@ -33,7 +33,7 @@
                 {% else %}
                 <div class="w-full flex items-center justify-between">
                     <a href="/{{ repo }}"
-                        class="font-medium text-black dark:text-white hover:text-gray-800 dark:hover:text-gray-100">
+                        class="font-medium text-black dark:text-white hover:text-gray-800 dark:hover:text-gray-100" style="overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
                         {{repo}}
                     </a>
                     <a href="/{{repo}}/delete" class="hover:bg-[#ECECEC] hover:dark:bg-[#373737] rounded p-2">

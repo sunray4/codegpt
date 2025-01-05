@@ -8,12 +8,11 @@ import config
 from datetime import datetime, timezone
 import shutil
 import json
+import re
 
 app = Flask(__name__)
 app.config.from_object('config.DevConfig')
 app.secret_key = "secretkey"
-code_t5 = CodeT5()
-code_t5.init()
 
 # database config
 MONGO_URI = config.MONGO_URI
@@ -26,19 +25,19 @@ users = db.get_collection('users')
 codestorage = db.get_collection('codestorage')
 
 # global variables
-files_data = {'repoName':'', 'files':[]}
+files_data = {'repoName':'', 'files':[], 'summary':''}
 
 def fetch_filesdata(username, repo):
-    if (codestorage.find_one({"username" : username, "repo" : repo})):
-        document = codestorage.find_one({"username" : username, "repo" : repo})
-        return document["filedata"] # list with all the data for a user & repo - has filename, code, generate_pseudo, pseudo, 
+    document = codestorage.find_one({"username": username, "repo": repo})
+    if document:
+        return document.get("filedata", [])
+    print('fetch_filesdata returned empty')
+    return []
 
 def format_text(code):
     formatted_code = code.replace('\n', '<br>')
     formatted_code = formatted_code.replace('\t', '&nbsp;&nbsp;&nbsp;&nbsp;')
     return formatted_code
-
-
 
 @app.route("/test")
 def test():
@@ -121,7 +120,9 @@ def gen_pseudo():
         if request.method == "POST":
             if 'generate_pseudo' in request.form.get('form_name'):
                 # files_data['repoName'] = request.form.get('repo')
-                # files_data['files'] = fetch_filesdata(session["user"], request.form.get('repo'))
+                print('[!!!!!!!!!!!]', request.form.get('repo'))
+                print(fetch_filesdata(session["user"], request.form.get('repo')))
+                files_data['files'] = fetch_filesdata(session["user"], request.form.get('repo'))
                 cur_user = session["user"]
                 cur_repo = files_data['repoName']
                 print(f'index: {request.form.get('index')}')
@@ -135,6 +136,7 @@ def gen_pseudo():
                     codestorage.update_one({"username" : cur_user, "repo" : cur_repo}, {"$set" : {f"filedata.{int(request.form.get('index')) - 1}.{'is_toggled'}": 'true'}})
 
                 if files_data['files'][int(request.form.get('index')) - 1]['generate_pseudo'] == 'false':
+                    code_t5 = CodeT5()
                     result = code_t5.summarize_line(files_data['files'][int(request.form.get('index')) - 1]['code'])
                     files_data['files'][int(request.form.get('index')) - 1]['pseudo'] = result
                     codestorage.update_one({"username" : cur_user, "repo" : cur_repo}, {"$set" : {f"filedata.{int(request.form.get('index')) - 1}.{'pseudo'}": result}})
@@ -202,9 +204,9 @@ def search():
                     cur_repo = files_data['repoName']
 
                 else:
-                    files_data['repoName'] = 'a directly submitted program'
+                    
                     # extension = get_extension(query)
-                    fileName = f'submittedProgram.plaintext'
+                    fileName = f'submittedProgram'
 
                     content = query.splitlines()
                     for i in range(len(content)):
@@ -214,17 +216,28 @@ def search():
                     files_data['files'].append(toadd)
                     
                     cur_user = session["user"]
-                    repo = query[:12].strip()
-                    cur_repo=repo
+                    try:
+                        code_t5 = CodeT5()
+                        content = []
+                        for line in query.splitlines():
+                            content.append(line)
+                        title = re.split(r'(?<=[.!?])\s+', code_t5.summarize_code(query))[0]
+                        repo = " ".join(title.split()[:5]) + '...'
+                        files_data['summary'] = title
+                    except:
+                        repo = query[:8].strip() + '...'
+                    
+                    cur_repo = repo
+                    files_data['repoName'] = repo
                     if (codestorage.find_one({"username" : cur_user, "repo" : repo})):
                         data = codestorage.find_one({"username" : cur_user, "repo" : repo})
                         fileNames = [a["filename"] for a in data["filedata"]]
                         if fileName not in fileNames:
                             cur_filedata = data["filedata"]
                             cur_filedata.append(toadd)
-                            codestorage.update_one({"username" : cur_user, "repo" : repo, 'github_username': ''}, {"$set" : {"filedata": cur_filedata}})
+                            codestorage.update_one({"username" : cur_user, "repo" : repo, 'github_username': '', 'summary': files_data['summary']}, {"$set" : {"filedata": cur_filedata}})
                     else:
-                        codestorage.insert_one({"username" : cur_user, "repo" : repo, 'github_username': '', "filedata" : [toadd]})
+                        codestorage.insert_one({"username" : cur_user, "repo" : repo, 'github_username': '', "filedata" : [toadd], 'summary': files_data['summary']})
                 
         with open('static/json/coding_languages.json', 'r') as f:
             data = json.load(f)

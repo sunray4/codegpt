@@ -255,18 +255,5 @@ pre>code.diff-highlight .token.inserted:not(.prefix) {
 
 /* Apply rounded corners to the first code block */
 pre[class*=language-]:first-child {
-    border-radius: 10pt 10pt 0 0; /* Rounded top corners */
-}
-
-/* Apply rounded corners to the last code block */
-pre[class*=language-]:last-child {
-    border-radius: 0 0 10pt 10pt; /* Rounded bottom corners */
-}
-
-.first-code-block {
-    border-radius: 10pt 10pt 0 0; /* Rounded top corners */
-}
-
-.last-code-block {
-    border-radius: 0 0 10pt 10pt; /* Rounded bottom corners */
+    border-radius: 10pt 10pt 10pt 10pt; /* Rounded top corners */
 }

@@ -54,17 +54,13 @@ class CodeT5:
             )
         ''', re.VERBOSE)
         
-        self.tokenizer = None
-        self.model = None
-            
-    def init(self):
         self.tokenizer = RobertaTokenizer.from_pretrained('Salesforce/codet5-base-multi-sum')
         self.model = T5ForConditionalGeneration.from_pretrained('Salesforce/codet5-base-multi-sum').to(self.device)
             
     def summarize_code(self, source_code):
         input_ids = self.tokenizer(source_code, return_tensors='pt').input_ids.to(self.device)
         generated_ids = self.model.generate(input_ids, max_length=100)
-        summary = self.tokenizer.decode(generated_ids[0], skip_special_tokens=True)
+        summary = self.tokenizer.decode(generated_ids[0], skip_special_tokens=True).replace(' .', '.')
         return summary
     
     def extract_code_blocks(self, source_code):
@@ -93,7 +89,7 @@ class CodeT5:
             if line == '\n' or line == '' or line.strip() == '\n' or line.strip() == '':
                 output.append('\n')
             elif self.is_comment(line.strip()):
-                output.append('\n\n')
+                output.append('\n')
             else:
                 summary = self.summarize_code(line)
                 print(f'Code: {line}\nSummary: {summary}\n')
