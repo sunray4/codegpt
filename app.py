@@ -120,8 +120,6 @@ def gen_pseudo():
         if request.method == "POST":
             if 'generate_pseudo' in request.form.get('form_name'):
                 # files_data['repoName'] = request.form.get('repo')
-                print('[!!!!!!!!!!!]', request.form.get('repo'))
-                print(fetch_filesdata(session["user"], request.form.get('repo')))
                 files_data['files'] = fetch_filesdata(session["user"], request.form.get('repo'))
                 cur_user = session["user"]
                 cur_repo = files_data['repoName']
@@ -145,10 +143,22 @@ def gen_pseudo():
                     codestorage.update_one({"username" : cur_user, "repo" : cur_repo}, {"$set" : {f"filedata.{int(request.form.get('index')) - 1}.{'generate_pseudo'}": 'true'}})
 
         fileExts = [a["filename"].split(".")[-1] for a in files_data["files"]]
+        
+        with open('static/json/coding_languages.json', 'r') as f:
+            data = json.load(f)
+            
+        ext_to_name = {ext.strip('.'): entry['name'] for entry in data if 'extensions' in entry for ext in entry['extensions']}
+                
+        for file_data in files_data['files']:
+            filename = file_data['filename']
+            file_ext = filename.split('.')[-1] if '.' in filename else 'Unknown'
+            file_data['ext'] = file_ext
+            file_data['language'] = ext_to_name.get(file_ext, 'Unknown').lower()
+            
         cursor = codestorage.find({"username" : session["user"]})
         repos = [a["repo"] for a in cursor]
         cur_repo = files_data['repoName']
-        return render_template('searchResults.html', files_data=files_data, repos=repos, fileExts = fileExts, cur_repo=cur_repo, mode=session.get("mode"))
+        return render_template('searchResults.html', files_data=files_data, repos=repos, cur_repo=cur_repo, mode=session.get("mode"))
     else:
         flash("Not logged in yet.", "info")
         return redirect(url_for("login"))
@@ -241,21 +251,14 @@ def search():
                 
         with open('static/json/coding_languages.json', 'r') as f:
             data = json.load(f)
-
-        ext_to_name = {}
-        for entry in data:
-            if 'extensions' in entry:
-                for ext in entry['extensions']:
-                    ext_to_name[ext.strip('.')] = entry['name']
-
+            
+        ext_to_name = {ext.strip('.'): entry['name'] for entry in data if 'extensions' in entry for ext in entry['extensions']}
+                
         for file_data in files_data['files']:
-            if '.' in file_data['filename']:
-                file_ext = file_data['filename'].split('.')[-1]
-            else:
-                file_ext = 'Unknown'
-
-            language = ext_to_name.get(file_ext, 'Unknown').lower()
-            file_data.update({'ext': file_ext, 'language': language})
+            filename = file_data['filename']
+            file_ext = filename.split('.')[-1] if '.' in filename else 'Unknown'
+            file_data['ext'] = file_ext
+            file_data['language'] = ext_to_name.get(file_ext, 'Unknown').lower()
                 
         cursor = codestorage.find({"username" : session["user"]})
         repos = [a["repo"] for a in cursor]

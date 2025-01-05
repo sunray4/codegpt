@@ -29,12 +29,12 @@ class CodeT5:
     def __init__(self):        
         if torch.backends.mps.is_available():
             # OVERRIDE FOR FASTER DEV
-            self.device = torch.device('mps')
-            print('[INFO] Using MPS')
-            
-            '''
             self.device = torch.device('cpu')
             print('[INFO] Using CPU')
+            
+            '''
+            self.device = torch.device('mps')
+            print('[INFO] Using MPS')
             '''
         else:
             self.device = torch.device('cpu')
