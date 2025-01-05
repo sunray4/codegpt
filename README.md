@@ -1,5 +1,7 @@
 # CodeGPT
-<h1 align="center">CodeGPT <img width="75" height="75" src="/static/images/logo.png" /></h1>
+<div style="display: flex; align-items: center; justify-content: center; height: 200px">
+    <h1 align="center">CodeGPT <img width="75" height="75" src="/static/images/logo.png" /></h1>
+</div>
 
 ![til](./static/gif/home.gif)
 
