@@ -1,5 +1,5 @@
 # CodeGPT
-![Logo](./static/images/logo.png)
+<h1 align="center">CodeGPT</h1>
 
 ![til](./static/gif/home.gif)
 
