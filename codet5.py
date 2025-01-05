@@ -1,6 +1,7 @@
-from transformers import RobertaTokenizer, T5ForConditionalGeneration, AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import RobertaTokenizer, T5ForConditionalGeneration
 import torch
 import ast
+import json
 
 class CodeBlockVisitor(ast.NodeVisitor):
     def __init__(self, source_code):
@@ -70,7 +71,7 @@ class CodeT5:
         output = []
         
         for line in code:
-            if line == '\n' or line == '':
+            if line == '\n' or line == '' or line.strip() == '\n' or line.strip() == '':
                 output.append('\n')
             
             if line.strip():
@@ -90,3 +91,15 @@ class CodeT5:
             output.append(f'{summary}\n')
             
         return '\n'.join(output)
+    
+    def summarize(self, code, filename):
+        # get language
+        with open('static/json/coding_languages.json', 'r') as f: data = json.load(f)            
+        ext_to_name = {entry['extensions'][0].strip('.'): entry['name'] for entry in data if 'extensions' in entry and entry['extensions']}
+        language = ext_to_name.get(filename.split('.')[-1] if '.' in filename else 'Unknown', 'Unknown').lower()
+        if language == 'python':
+            # return self.summarize_by_chunks('\n'.join(code))
+            return self.summarize_line(code)
+        else:
+            print('not python')
+            return self.summarize_line(code)

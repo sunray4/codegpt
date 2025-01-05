@@ -3,6 +3,7 @@ from pymongo import MongoClient
 from codet5 import CodeT5
 from scraper import GithubScraper
 from get_lang import get_extension
+import urllib.parse
 import os
 import config
 from datetime import datetime, timezone
@@ -36,7 +37,6 @@ def format_text(code):
     formatted_code = code.replace('\n', '<br>')
     formatted_code = formatted_code.replace('\t', '&nbsp;&nbsp;&nbsp;&nbsp;')
     return formatted_code
-
 
 
 
@@ -78,6 +78,7 @@ def login():
             user = users.find_one({"username" : username})
             if user['password'] == password:
                 session["user"] = username
+                session["mode"] = "dark"
 
                 return redirect(url_for("index"))
             else:
@@ -95,13 +96,18 @@ def logout():
     return redirect(url_for("login"))
 
 
-@app.route('/')
-def index():
+@app.route('/', methods={"GET", "POST"})
+def index():        
+
     if "user" in session:
         #might need to rerun after submitting new inquiry
         cursor = codestorage.find({"username" : session["user"]})
         repos = [a["repo"] for a in cursor]
-        return render_template('starting.html', repos=repos)
+        if request.method == "POST":
+            if "mode" in session:
+                session["mode"] = "dark" if session.get("mode") != "dark" else ""
+        return render_template('starting.html', repos=repos, mode=session.get("mode"))
+    
     else:
         flash("Not logged in yet.", "info")
         return redirect(url_for("login"))
@@ -111,17 +117,15 @@ def index():
 def gen_pseudo():
     if "user" in session:
         # might need to rerun after submitting new inquiry
-    
+
         if request.method == "POST":
             if 'generate_pseudo' in request.form.get('form_name'):
-                
-                print("generating pseudo")
-                print(len(files_data))
-                print(request.form.get('index'))
-                
+                # files_data['repoName'] = request.form.get('repo')
+                # files_data['files'] = fetch_filesdata(session["user"], request.form.get('repo'))
                 cur_user = session["user"]
                 cur_repo = files_data['repoName']
-
+                print(f'index: {request.form.get('index')}')
+                print(f'files length: {len(files_data['files'])}')
                 if files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] == 'true':
                     files_data['files'][int(request.form.get('index')) - 1]['is_toggled'] = 'false'
                     codestorage.update_one({"username" : cur_user, "repo" : cur_repo}, {"$set" : {f"filedata.{int(request.form.get('index')) - 1}.{'is_toggled'}": 'false'}})
@@ -143,7 +147,7 @@ def gen_pseudo():
         cursor = codestorage.find({"username" : session["user"]})
         repos = [a["repo"] for a in cursor]
         cur_repo = files_data['repoName']
-        return render_template('searchResults.html', files_data=files_data, repos=repos, fileExts = fileExts, cur_repo=cur_repo)
+        return render_template('searchResults.html', files_data=files_data, repos=repos, fileExts = fileExts, cur_repo=cur_repo, mode=session.get("mode"))
     else:
         flash("Not logged in yet.", "info")
         return redirect(url_for("login"))
@@ -169,13 +173,9 @@ def search():
                             fileName = file[:-4].replace('\\', '/')
                             with open(file_path, 'r', encoding='utf-8') as file_obj:
                                 content = []
-                                # for line in file_obj:
-                                #     if line.strip():
-                                #         content.append(line)
                                 for line in file_obj:
                                     content.append(line)
 
-                                # print(content)
                                 toadd = {'filename': fileName, 'code': content, 'generate_pseudo': 'false', 'pseudo': [], 'is_toggled': 'false'}
                                 files_data['files'].append(toadd)
                                 
@@ -202,49 +202,53 @@ def search():
                     print("finished walking through the entire directory")
 
                 else:
-                    files_data['repoName'] = 'directly submitted program'
-                    extension = get_extension(query)
-                    fileName = f'submittedProgram.{extension}'
-                    content = query
+                    files_data['repoName'] = 'a directly submitted program'
+                    # extension = get_extension(query)
+                    fileName = f'submittedProgram.plaintext'
+
+                    content = query.splitlines()
+                    for i in range(len(content)):
+                        content[i] = content[i] + '\n'
+                        
+                    print(content)
+                        
                     toadd = {'filename': fileName, 'code': content, 'generate_pseudo': 'false', 'pseudo': [], 'is_toggled': 'false'}
                     files_data['files'].append(toadd)
                     
                     cur_user = session["user"]
-
-                    if (codestorage.find_one({"username" : cur_user, "repo" : query[:12]})):
-                        data = codestorage.find_one({"username" : cur_user, "repo" : query[:12]})
+                    repo = query[:12].strip()
+                    if (codestorage.find_one({"username" : cur_user, "repo" : repo})):
+                        data = codestorage.find_one({"username" : cur_user, "repo" : repo})
                         fileNames = [a["filename"] for a in data["filedata"]]
                         if fileName not in fileNames:
                             cur_filedata = data["filedata"]
                             cur_filedata.append(toadd)
-                            codestorage.update_one({"username" : cur_user, "repo" : scraper.repo, 'github_username': scraper.owner}, {"$set" : {"filedata": cur_filedata}})
+                            codestorage.update_one({"username" : cur_user, "repo" : repo, 'github_username': ''}, {"$set" : {"filedata": cur_filedata}})
                     else:
-                        codestorage.insert_one({"username" : cur_user, "repo" : scraper.repo, 'github_username': scraper.owner, "filedata" : [toadd]})
-
-
-                    
-                    
+                        codestorage.insert_one({"username" : cur_user, "repo" : repo, 'github_username': '', "filedata" : [toadd]})
                 
         with open('static/json/coding_languages.json', 'r') as f:
             data = json.load(f)
-            
+
         ext_to_name = {}
         for entry in data:
-            language_name = entry.get('name', 'Unknown')
-            extensions = entry.get('extensions', [])
-            if extensions:
-                first_ext = extensions[0]
-                ext_to_name[first_ext.strip('.')] = language_name
-                
+            if 'extensions' in entry:
+                for ext in entry['extensions']:
+                    ext_to_name[ext.strip('.')] = entry['name']
+
         for file_data in files_data['files']:
-            filename = file_data['filename']
-            file_ext = filename.split('.')[-1] if '.' in filename else 'Unknown'
-            file_data['ext'] = file_ext
-            file_data['language'] = ext_to_name.get(file_ext, 'Unknown').lower()
+            if '.' in file_data['filename']:
+                file_ext = file_data['filename'].split('.')[-1]
+            else:
+                file_ext = 'Unknown'
+
+            language = ext_to_name.get(file_ext, 'Unknown').lower()
+            file_data.update({'ext': file_ext, 'language': language})
+                
         cursor = codestorage.find({"username" : session["user"]})
         repos = [a["repo"] for a in cursor]
 
-        return render_template('searchResults.html', files_data=files_data, repos=repos)
+        return render_template('searchResults.html', files_data=files_data, repos=repos, mode=session.get("mode"))
     else:
         flash("Not logged in yet.", "info")
         return redirect(url_for("login"))
@@ -279,13 +283,7 @@ def repo(repository):
         with open('static/json/coding_languages.json', 'r') as f:
             data = json.load(f)
             
-        ext_to_name = {}
-        for entry in data:
-            language_name = entry.get('name', 'Unknown')
-            extensions = entry.get('extensions', [])
-            if extensions:
-                first_ext = extensions[0]
-                ext_to_name[first_ext.strip('.')] = language_name
+        ext_to_name = {ext.strip('.'): entry['name'] for entry in data if 'extensions' in entry for ext in entry['extensions']}
                 
         for file_data in files_data['files']:
             filename = file_data['filename']
@@ -293,7 +291,7 @@ def repo(repository):
             file_data['ext'] = file_ext
             file_data['language'] = ext_to_name.get(file_ext, 'Unknown').lower()
         
-        return render_template('searchResults.html', files_data=files_data, repos=repos, cur_repo = repository)
+        return render_template('searchResults.html', files_data=files_data, repos=repos, cur_repo = repository, mode=session.get("mode"))
     else:
         flash('Please login first.', 'info')
         return redirect(url_for('login'))
@@ -308,9 +306,10 @@ def repo(repository):
 
 @app.route("/<repository>/delete")
 def delete(repository):
+    repo = urllib.parse.unquote(repository)
     if "user" in session:
         cur_user = session["user"]
-        codestorage.delete_one({ "username": cur_user, "repo" : repository })
+        codestorage.delete_one({ "username": cur_user, "repo" : repo })
         return redirect(url_for("index"))
     flash("Not logged in yet!", "error")
     return redirect(url_for("login"))

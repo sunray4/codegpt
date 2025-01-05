@@ -41,5 +41,5 @@ def get_extension(code):
         "Assembly": ".asm",
     }
     
-    return language_extensions.get(detect_language(code), "Unknown language")
-
+    # return language_extensions.get(detect_language(code), "unknown1")
+    return '.plaintext'

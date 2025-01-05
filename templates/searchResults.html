@@ -19,7 +19,7 @@
 
 {% if files_data['files'] %}
 <div class="flex flex-col h-screen overflow-hidden">
-    <div class="flex-1 overflow-y-auto p-4 space-y-4">
+    <div class="flex-1 overflow-y-auto p-4 space-y-4 dark:text-white">
 
         <p>Here are your search results on {{ files_data['repoName'] }}.</p>
 
@@ -27,11 +27,12 @@
         <div id="file-result" class="flex-1 overflow-y-auto p-4">
             <form action="/gen_pseudo" method="POST" id="generate-pseudo-{{ loop.index }}">
                 <input type="hidden" name="form_name" value="generate_pseudo">
+                <input type="hidden" name="repo" value="files_data[repoName]">
                 <input type="hidden" name="index" value="{{ loop.index }}">
                 <input type="hidden" name="status" value="{{ file_data['generate_pseudo'] }}">
                 <button id="dropdown-toggle-{{ loop.index }}" type="button"
                     style="display: inline-flex; align-items: center;" data-form-id="generate-pseudo-{{ loop.index }}"
-                    class="dropdown-toggle w-full text-left focus:outline-none">
+                    class="dropdown-toggle w-full text-left focus:outline-none dark:text-white">
                     {{ file_data['filename'] }} {% if file_data['is_toggled'] == 'true'%} ▲ {% else %} ▼ {% endif %}
                     <svg class="animate-spin h-5 w-5 text-gray-500 hidden" xmlns="http://www.w3.org/2000/svg"
                         fill="none" style="margin-left: 8px; width: 1em; height: 1em; fill: currentColor;"
@@ -49,17 +50,15 @@
                 data-hidden-value="{{ file_data['is_toggled'] }}">
                 <div id="1line-content-index{{ i }}" class="items-start pb-10">
                     <div class="flex items-start space-x-4">
-                        <div class="w-3/5">
+                        <div class="w-1/2">
                             <pre class="code-block"><code style="font-size: 0.8rem" class="language-{{ file_data['language'] }}">{% for i in range(file_data['code']|length) %}{{ file_data['code'][i] }}{% endfor %}</code></pre>
                         </div>
 
-                        <div class="w-2/5">
+                        <div class="w-1/2">
                             <pre class="text-block"><code style="font-size: 0.8rem" class="language-plaintext">{% for i in range(file_data['code']|length) %}{{ file_data['pseudo'][i] }}{% endfor %}</code></pre>
                         </div>
                     </div>
                 </div>
-        
-
                 
                 <!-- {% for i in range(file_data['code']|length) %}
                 <div id="1line-content-index{{ i }}" class="grid grid-cols-5 items-center pb-10">
