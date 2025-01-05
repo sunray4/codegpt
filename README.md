@@ -24,3 +24,12 @@ This is our first time using MongoDB and MongoDB Atlas so we learned how to stor
 - **Upload function**: We want the user to be able to upload their code files directly into CodeGPT in addition to using a Github repository link or code snippet. This would be particularly useful if the user wants a summary of a specific file that is stored locally on their device. 
 - **Improving accuracy and level of detail of model**: Our current model makes quite a lot of mistakes when interpreting code, and its description is not very detailed. We want to work on finding datasets that can further train the model so that it works better.
 - **Improving runtime**
+
+## Screenshots
+![Example code snippet result.](./static/images/example_code_snippet_result.png)
+
+![Example GitHub Repository Result.](./static/images/example_github_repo_result.png)
+
+![Create account page.](./static/images/create_account.png)
+
+![Sign in page.](./static/images/sign_in.png)
