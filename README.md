@@ -1,5 +1,4 @@
 # CodeGPT
-
 ![til](./static/gif/home.gif)
 
 ## Inspiration 🧠
