@@ -1,4 +1,6 @@
 # CodeGPT
+![Logo](./static/images/logo.png)
+
 ![til](./static/gif/home.gif)
 
 ## Inspiration 🧠
