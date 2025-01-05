@@ -1,9 +1,11 @@
 # CodeGPT
-## Inspiration 🧠
-Whenever developers are looking into contributing to an existing large-scale project, such as an open-source project on GitHub, it can be a pain trying to understand what each file within the repository does, and how it all ties together to complete complex tasks. Therefore, we came up with the idea of developing an application which can conduct line-by-line summarization of code into human language, allowing developers to quickly understand the project and start contributing. This would be particularly helpful for newer developers with less experience in reading code.
 
 ## What it does ⚙️
 CodeGPT allows you to submit a GitHub repository link or a code snippet, which it uses to generate a line-by-line summary in plain text. When a GitHub repository link is submitted, our app uses the GitHub API to walk through all files within the repository and retrieve the code in each file. Using a fine-tuned CodeT5 code-to-text model from Hugging Face, all code within the repository can be summarized. The original code and its corresponding summarization are displayed side-by-side, allowing developers to understand the code segments easily. If the user creates an account on our application, it also stores all past searches to allow easy future access. 
+
+## Inspiration 🧠
+Whenever developers are looking into contributing to an existing large-scale project, such as an open-source project on GitHub, it can be a pain trying to understand what each file within the repository does, and how it all ties together to complete complex tasks. Therefore, we came up with the idea of developing an application which can conduct line-by-line summarization of code into human language, allowing developers to quickly understand the project and start contributing. This would be particularly helpful for newer developers with less experience in reading code.
+
 
 ## How we built it 👷‍♀️🔧
 We built our web application using Python with Flask framework, HTML, Tailwind CSS, MongoDB Atlas for the database and downloaded a CodeT5-base model for code summarization. We used VS Code Liveshare to collaborate on our project together in real time, and Git for version control.
