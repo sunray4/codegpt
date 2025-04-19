@@ -276,6 +276,9 @@ def search():
 @app.route("/<repository>", methods=['POST', 'GET'])
 def repo(repository):
     if "user" in session:
+        files_data['repoName'] = ''
+        files_data['summary'] = ''
+        files_data['files'] = []
         cursor = codestorage.find({"username" : session["user"]})
         repos = [a["repo"] for a in cursor]
         files_data['files'] = fetch_filesdata(session["user"], repository)

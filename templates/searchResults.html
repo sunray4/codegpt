@@ -85,20 +85,20 @@
 
 {% block searchResults_scripts %}
 
-<script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12"></script>
+<!-- <script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12"></script> -->
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        var options = {
-            strings: ["What can I help with?"],
-            typeSpeed: 50, // Adjust typing speed (milliseconds per character)
-            backSpeed: 25, // Adjust backspacing speed if needed
-            loop: false,   // Set to true if you want the typing to loop
-            showCursor: false, // Display the cursor
-            cursorChar: '|',  // Character for cursor
-        };
+    // document.addEventListener('DOMContentLoaded', function () {
+    //     var options = {
+    //         strings: ["What can I help with?"],
+    //         typeSpeed: 50, // Adjust typing speed (milliseconds per character)
+    //         backSpeed: 25, // Adjust backspacing speed if needed
+    //         loop: false,   // Set to true if you want the typing to loop
+    //         showCursor: false, // Display the cursor
+    //         cursorChar: '|',  // Character for cursor
+    //     };
 
-        var typed = new Typed('#typed-text', options);
-    });
+    //     var typed = new Typed('#typed-text', options);
+    // });
 
     document.addEventListener('DOMContentLoaded', function () {
         const dropdownButtons = document.querySelectorAll('.dropdown-toggle');
