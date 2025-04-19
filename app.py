@@ -1,3 +1,8 @@
+#username: sunray4
+#password: myCodeGPT
+
+#new github token must be placed into config.py in future use because the token expires
+    #github settings -> developer settings -> personal access tokens -> fine-grained tokens -> generate new token
 
 from flask import Flask, render_template, request, url_for, session, redirect, flash
 from pymongo import MongoClient
@@ -28,6 +33,7 @@ codestorage = db.get_collection('codestorage')
 # global variables
 files_data = {'repoName':'', 'files':[], 'summary':''}
 
+#functions
 def fetch_filesdata(username, repo):
     document = codestorage.find_one({"username": username, "repo": repo})
     if document:
@@ -40,10 +46,22 @@ def format_text(code):
     formatted_code = formatted_code.replace('\t', '&nbsp;&nbsp;&nbsp;&nbsp;')
     return formatted_code
 
-@app.route("/test")
-def test():
-    return "TEST FLASK PAGE. does it render??"
-
+#routes
+@app.route('/', methods={"GET", "POST"})
+def index():        
+    if "user" in session:
+        #might need to rerun after submitting new inquiry
+        cursor = codestorage.find({"username" : session["user"]})
+        repos = [a["repo"] for a in cursor]
+        if request.method == "POST":
+            if "mode" in session:
+                session["mode"] = "dark" if session.get("mode") != "dark" else ""
+        return render_template('starting.html', repos=repos, mode=session.get("mode"))
+    
+    else:
+        flash("Not logged in yet.", "info")
+        return redirect(url_for("login"))
+    
 @app.route("/create", methods=["POST", "GET"])
 def create():
     if request.method == "POST":
@@ -89,6 +107,7 @@ def login():
             
     return render_template("login.html")
     
+    
 @app.route("/logout")
 def logout():
     session.clear()
@@ -96,22 +115,6 @@ def logout():
     return redirect(url_for("login"))
 
 
-@app.route('/', methods={"GET", "POST"})
-def index():        
-
-    if "user" in session:
-        #might need to rerun after submitting new inquiry
-        cursor = codestorage.find({"username" : session["user"]})
-        repos = [a["repo"] for a in cursor]
-        if request.method == "POST":
-            if "mode" in session:
-                session["mode"] = "dark" if session.get("mode") != "dark" else ""
-        return render_template('starting.html', repos=repos, mode=session.get("mode"))
-    
-    else:
-        flash("Not logged in yet.", "info")
-        return redirect(url_for("login"))
-    
 
 @app.route('/gen_pseudo', methods=['GET', "POST"])
 def gen_pseudo():
