@@ -1,3 +1,4 @@
 env
 config.py
 temp_repos
+__pycache__/
